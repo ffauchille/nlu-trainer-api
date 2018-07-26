@@ -4,7 +4,7 @@ import { flatMap, map } from "rxjs/operators";
 import { Observable } from "../node_modules/rxjs";
 import * as request from "request";
 import { joinPath } from "./utils";
-import { APIError } from "./error";
+import { APIError, rasaTrainError, keyMissingError } from "./error";
 
 type RasaTrainingResponse = {
   info: string
@@ -12,11 +12,6 @@ type RasaTrainingResponse = {
 
 const baseUrl = process.env.RASA_ENDPOINT || "http://localhost:5000"
 
-const rasaTrainError = (msg: string) => ( { type: "RASA", err: new Error(`error posting training file ${msg}`) })
-export const keyMissingError = (missingKey: string): APIError => ({
-  type: "RASA",
-  err: new Error(`Bad format, missing ${missingKey}`)
-});
 
 function rasaPostFile<T>(resource: string, path: string): Observable<T> {
   return new Observable(subscriber => {

@@ -1,11 +1,10 @@
 import * as fs from "fs";
 import { Observable, of, Subscriber } from "rxjs";
-import { APIError } from "./error";
-import { keyMissingError } from "./rasa";
+import { APIError, keyMissingError } from "./error";
 
 type PATH = string;
 
-const newLines = (lines: string[], prefix?: string) => lines.slice(1, lines.length).reduce((d, line) => `\n${prefix ? prefix : ""}` + line, lines[0])
+const newLines = (lines: string[], prefix?: string) => lines.slice(1, lines.length).reduce((d, line) => d += (`\n${prefix || ""}` + line), lines[0])
 
 export const deleteRASAFileObservable = (fname: string): Observable<boolean> => {
   return new Observable<boolean>((subscriber: Subscriber<boolean>) => {

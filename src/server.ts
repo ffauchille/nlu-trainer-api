@@ -1,8 +1,10 @@
 import * as restify from 'restify'
 import * as corsMiddleware from 'restify-cors-middleware'
-import rasaRoutes from './rasa'
 import routes from './routes';
+import { onError } from './error';
 
+var dotenv = require('dotenv');
+dotenv.config();
 
 const server = restify.createServer()
 
@@ -25,6 +27,7 @@ server.use(cors.actual)
 
 // Register app's routes
 routes(server)
+server.on("error", onError)
 
 
 server.listen(process.env.HTTP_PORT || 8000, () => console.log(`Listening on ${server.url}`))

@@ -6,7 +6,7 @@
   "scripts": {
     "clean": "rm -rf built/",
     "build": "npm run clean && tsc",
-    "start": "npm run build && node built/app.js",
+    "start": "npm run build && node built/server.js",
     "test": "mocha"
   },
   "repository": {
@@ -25,12 +25,17 @@
   },
   "homepage": "https://github.com/ffauchille/nlu-trainer-api#readme",
   "dependencies": {
+    "dotenv": "^6.0.0",
+    "jsonschema": "^1.2.4",
+    "mongodb": "^3.1.1",
     "request": "^2.87.0",
     "restify": "^7.2.1",
     "restify-cors-middleware": "^1.1.1",
     "rxjs": "^6.2.2"
   },
   "devDependencies": {
+    "@types/jsonschema": "^1.1.1",
+    "@types/mongodb": "^3.1.2",
     "@types/request": "^2.47.1",
     "@types/restify": "^7.2.3",
     "@types/restify-cors-middleware": "^1.0.1",
