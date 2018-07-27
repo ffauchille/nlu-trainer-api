@@ -9,6 +9,7 @@ export const INTENT_COLLECTION = "intents";
 export const EXAMPLE_COLLECTION = "examples";
 export const APPS_COLLECTION = "apps";
 
+export const MONGO_ID_RGXP = /[a-z0-9]{24}/;
 
 export function withId(json: any) {
     delete json.id
@@ -52,14 +53,13 @@ export class Collection {
         })
     }
 
-    run<T>(response: restify.Response, queryCb: ( col: mongo.Collection<any> ) => Promise<T>): Subscription {
+    run<T>(response: restify.Response, queryCb: ( col: mongo.Collection<any> ) => Promise<T>): Observable<T> {
         return this.withDB()
             .pipe(flatMap(col => 
                 from(queryCb(col.collection(this.colName, (err, res) => this.observableResult(err, res)))
             )))
             .pipe(map(d => response.send(200, d)))
             .pipe(catchError(err => response.send(500, mongoError(err))))
-            .subscribe()
     }
 
     close(force?: boolean): Observable<void> {
@@ -74,7 +74,7 @@ export class Collection {
 
 export function runCmd<T>(response: restify.Response, colName: string, queryCb: ( col: mongo.Collection<any> ) => Promise<T>): Subscription {
     let col = new Collection(colName)
-    let sub = col.run(response, queryCb)
+    let sub = col.run(response, queryCb).subscribe()
     col.close();
     return sub;
 }
