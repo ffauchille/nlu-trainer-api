@@ -2,30 +2,13 @@ import * as restify from "restify";
 import rasaRoutes from "./rasa";
 import intentsRoutes from "./intents";
 import appsRoutes from "./applications";
-import { wrongFormatError, missingQP, APIError } from "./error";
+import { wrongFormatError, missingQP } from "./error";
 import exampleRoutes from "./examples";
-
-function validate<T>(candidate: any | any[]) {
-    var valid: boolean = true
-    if (candidate instanceof Array) {
-        candidate.forEach(v => {
-            if (v as T === undefined){
-                valid = false
-            }
-        })
-    } else { 
-        if (!(candidate as T)) {
-            valid = false
-        }
-    }
-    
-    return valid
-}
 
 function jsonBody<T>(request: restify.Request, response: restify.Response, cb: (json: T | T[]) => void, extraCheck?: (json: T | T[]) => boolean) {
     if (request.body) {
         let json = typeof request.body === "string" ? JSON.parse(request.body) : request.body
-        if (json && extraCheck && extraCheck(json) && validate(json)) {
+        if (json && extraCheck && extraCheck(json)) {
             cb(json)
         } else response.send(400, wrongFormatError())
     } else response.send(400, wrongFormatError())
