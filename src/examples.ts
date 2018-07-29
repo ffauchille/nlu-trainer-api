@@ -26,9 +26,7 @@ export default (server: restify.Server) => {
     (request: restify.Request, response: restify.Response) => {
       withJSON<AppExample>(request, response, json => {
         runCmd(response, EXAMPLE_COLLECTION, c =>
-          c.insertMany(
-            json.examples.map(j => ({ app: json.app, ...withId(j) }))
-          )
+          c.insertOne({ ...withId(json) })
         );
       });
     }
@@ -36,15 +34,9 @@ export default (server: restify.Server) => {
 
   server.get(
     "/examples",
-    (
-      request: restify.Request,
-      response: restify.Response
-    ) => {
+    (request: restify.Request, response: restify.Response) => {
       var selector = {};
       if (request.query) {
-        if (request.query.app) {
-          selector = { app: request.query.app };
-        }
         if (request.query.intent) {
           selector = { ...selector, intent: request.query.intent };
         }
