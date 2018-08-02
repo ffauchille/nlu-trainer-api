@@ -5,3 +5,7 @@ export function joinPath(...paths: string[]): string {
         } else return chunck
     },"")
 }
+
+export function urlify(str: string) {
+    return str.replace(" ", "%20")
+}

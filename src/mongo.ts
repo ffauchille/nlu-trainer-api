@@ -53,7 +53,12 @@ export class Collection {
         })
     }
 
-    run<T>(response: restify.Response, queryCb: ( col: mongo.Collection<any> ) => Promise<T>): Observable<T> {
+    run<T>(queryCb: (col: mongo.Collection<T>) => Promise<T>): Observable<T> {
+        return this.withDB()
+                .pipe(flatMap( col => from(queryCb(col.collection(this.colName, this.observableResult)))))
+    }
+
+    quickRun<T>(response: restify.Response, queryCb: ( col: mongo.Collection<any> ) => Promise<T>): Observable<T> {
         return this.withDB()
             .pipe(flatMap(col => 
                 from(queryCb(col.collection(this.colName, (err, res) => this.observableResult(err, res)))
@@ -72,9 +77,9 @@ export class Collection {
     
 }
 
-export function runCmd<T>(response: restify.Response, colName: string, queryCb: ( col: mongo.Collection<any> ) => Promise<T>): Subscription {
+export function quickCmd<T>(response: restify.Response, colName: string, queryCb: ( col: mongo.Collection<any> ) => Promise<T>): Subscription {
     let col = new Collection(colName)
-    let sub = col.run(response, queryCb).subscribe()
+    let sub = col.quickRun(response, queryCb).subscribe()
     col.close();
     return sub;
 }

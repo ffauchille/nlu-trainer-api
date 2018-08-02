@@ -1,6 +1,6 @@
 import * as restify from "restify";
 import { withJSON } from "./routes";
-import { runCmd, EXAMPLE_COLLECTION, withId } from "./mongo";
+import { quickCmd, EXAMPLE_COLLECTION, withId } from "./mongo";
 
 type Entity = {
   start: number;
@@ -25,7 +25,7 @@ export default (server: restify.Server) => {
     "/examples",
     (request: restify.Request, response: restify.Response) => {
       withJSON<AppExample>(request, response, json => {
-        runCmd(response, EXAMPLE_COLLECTION, c =>
+        quickCmd(response, EXAMPLE_COLLECTION, c =>
           c.insertOne({ ...withId(json) })
         );
       });
@@ -41,7 +41,7 @@ export default (server: restify.Server) => {
           selector = { ...selector, intent: request.query.intent };
         }
       }
-      runCmd(response, EXAMPLE_COLLECTION, c => c.find(selector).toArray());
+      quickCmd(response, EXAMPLE_COLLECTION, c => c.find(selector).toArray());
     }
   );
 };

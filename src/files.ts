@@ -1,6 +1,9 @@
 import * as fs from "fs";
-import { Observable, of, Subscriber } from "rxjs";
-import { APIError, keyMissingError } from "./error";
+import { Observable, Subscriber, of } from "rxjs";
+import { keyMissingError } from "./error";
+import { Collection, APPS_COLLECTION, INTENT_COLLECTION, EXAMPLE_COLLECTION } from "./mongo";
+import { flatMap, map } from "rxjs/operators";
+import { AppModel } from "./models";
 
 type PATH = string;
 
@@ -44,3 +47,19 @@ export const writeRASAFileObservable = (json: any): Observable<PATH> => {
     subscriber.next(fname);
   });
 };
+
+
+export const withRASAPayload = (projectId: string): Observable<any> => {
+  const rasa = {}
+  let appsCol = new Collection(APPS_COLLECTION);
+  let intentsCol = new Collection(INTENT_COLLECTION);
+  let examplesCol = new Collection(EXAMPLE_COLLECTION);
+  return appsCol.run<AppModel>(c => c.findOne({ _id: projectId}))
+        .pipe(map(doc => { project: doc.name }))
+        .pipe(flatMap(res => 
+            intentsCol.run<any[]>(c => c.find({ appId: projectId}).toArray())
+                      .pipe(map(docs => docs.map(i => {
+                        /* TODO */
+                      })))) )
+  
+}  

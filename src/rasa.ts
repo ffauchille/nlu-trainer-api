@@ -3,7 +3,7 @@ import { writeRASAFileObservable, deleteRASAFileObservable } from "./files";
 import { flatMap, map } from "rxjs/operators";
 import { Observable } from "../node_modules/rxjs";
 import * as request from "request";
-import { joinPath } from "./utils";
+import { joinPath, urlify } from "./utils";
 import { APIError, rasaTrainError, keyMissingError } from "./error";
 
 type RasaTrainingResponse = {
@@ -40,7 +40,6 @@ function rasaPostFile<T>(resource: string, path: string): Observable<T> {
 /**
  * Expected payload:
  * {
- *  "name": "myfile.md",
  *  "project": "myproject",
  *  "pipeline": [ "" ] // Or "" for template name
  *  
@@ -56,11 +55,12 @@ export default (server: restify.Server) => {
       if (request.body) {
         let json = typeof request.body === "string" ? JSON.parse(request.body) : request.body
         if (json) {
-          if (json.project) {
+          if (typeof json.project === 'string') {
             let model: string = json.model ? `&model=${json.model}` : ""; 
+            withRASAPayload(project)
             writeRASAFileObservable(json).pipe(
               flatMap(fname => 
-                rasaPostFile(`/train?project=${json.project}${model}`, fname).pipe(
+                rasaPostFile(`/train?project=${urlify(json.project)}${model}`, fname).pipe(
                   map( (rasaRes: RasaTrainingResponse) => ({ rasaRes, fname }))
                 ))
             ).pipe(
