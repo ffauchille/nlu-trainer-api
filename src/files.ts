@@ -1,13 +1,16 @@
 import * as fs from "fs";
-import { Observable, Subscriber, of } from "rxjs";
+import { Observable, Subscriber } from "rxjs";
 import { keyMissingError } from "./error";
-import { Collection, APPS_COLLECTION, INTENT_COLLECTION, EXAMPLE_COLLECTION } from "./mongo";
+import { Collection, INTENT_COLLECTION, EXAMPLE_COLLECTION } from "./mongo";
 import { flatMap, map } from "rxjs/operators";
-import { AppModel } from "./models";
+import { RASATrainingData } from "./models";
 
 type PATH = string;
 
 const newLines = (lines: string[], prefix?: string) => lines.slice(1, lines.length).reduce((d, line) => d += (`\n${prefix || ""}` + line), lines[0])
+const twoDigits = (n: number): string => n.toString().length === 1 ? "0" + n.toString() : n.toString();
+const formatDate = (d: Date): string => `${d.getFullYear()}${twoDigits(d.getMonth() + 1)}${twoDigits(d.getDate())}-${twoDigits(d.getHours())}${twoDigits(d.getMinutes())}${twoDigits(d.getSeconds())}`
+export const normalize = (fname: string): string => fname.toLowerCase().replace(" ", "_");
 
 export const deleteRASAFileObservable = (fname: string): Observable<boolean> => {
   return new Observable<boolean>((subscriber: Subscriber<boolean>) => {
@@ -22,10 +25,12 @@ export const writeRASAFileObservable = (json: any): Observable<PATH> => {
     var data: string = "";
     // headers
     data += "language: " + (json.language ? `"${json.language}"` : "\"en\"")
+    data += "\n"
     if (json.pipeline) {
       data += "\n" + (typeof json.pipeline === "string" ? `pipeline: "${json.pipeline}"` : `pipeline:\n${newLines(json.pipeline.map(e => `"${e}"`), "  - name: ")}`)
     } else data += "\npipeline: \"spacy_sklearn\"";
-
+    data += "\n"
+    
     // data 
     data += "\ndata: "
     if (json.data) {
@@ -34,14 +39,14 @@ export const writeRASAFileObservable = (json: any): Observable<PATH> => {
 
     // file name
     if (json.project) {
-      fname += json.project;
+      fname += normalize(json.project);
     } else subscriber.error(keyMissingError("project"));
     if (json.model) {
       fname += "-" + json.model;
-    } else fname += "-" + new Date().toDateString();
+    } else fname += "-" + formatDate(new Date());
 
     fname += ".json.yml"
-    fname = "./data/" + fname
+    fname = "data/" + fname
     fs.writeFileSync(fname, data);
     
     subscriber.next(fname);
@@ -49,17 +54,23 @@ export const writeRASAFileObservable = (json: any): Observable<PATH> => {
 };
 
 
-export const withRASAPayload = (projectId: string): Observable<any> => {
-  const rasa = {}
-  let appsCol = new Collection(APPS_COLLECTION);
+export const withRASAData = (projectId: string): Observable<RASATrainingData> => {
+
   let intentsCol = new Collection(INTENT_COLLECTION);
   let examplesCol = new Collection(EXAMPLE_COLLECTION);
-  return appsCol.run<AppModel>(c => c.findOne({ _id: projectId}))
-        .pipe(map(doc => { project: doc.name }))
-        .pipe(flatMap(res => 
-            intentsCol.run<any[]>(c => c.find({ appId: projectId}).toArray())
-                      .pipe(map(docs => docs.map(i => {
-                        /* TODO */
-                      })))) )
+  let intents$ = intentsCol.run<any[]>(c => c.find({ appId: projectId }).toArray())
+  let rasaData = intents$.pipe(
+    flatMap(intents => {
+      let intentIds = intents.map(i => i._id)
+      return examplesCol.run<any[]>(c => c.find({ intentId: { $in: intentIds }}).toArray())
+    })).pipe(map(examples => ({
+      "rasa_nlu_data": {
+        "common_examples": examples.map(ex => ({ text: ex.text, intent: ex.intentName, entities: [] })),
+        "regex_features": [],
+        "entity_synonyms": []
+      }
+      }))
+    )
+  return rasaData
   
 }  

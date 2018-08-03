@@ -1,6 +1,14 @@
 import * as restify from "restify";
-import { withJSON } from "./routes";
-import { quickCmd, EXAMPLE_COLLECTION, withId } from "./mongo";
+import { withJSON, withQP } from "./routes";
+import {
+  quickCmd,
+  EXAMPLE_COLLECTION,
+  withId,
+  Collection,
+  INTENT_COLLECTION
+} from "./mongo";
+import { flatMap, map } from "rxjs/operators";
+import { keyMissingError } from "./error";
 
 type Entity = {
   start: number;
@@ -24,10 +32,8 @@ export default (server: restify.Server) => {
   server.post(
     "/examples",
     (request: restify.Request, response: restify.Response) => {
-      withJSON<AppExample>(request, response, json => {
-        quickCmd(response, EXAMPLE_COLLECTION, c =>
-          c.insertOne({ ...withId(json) })
-        );
+      withJSON<any>(request, response, json => {
+        quickCmd(response, EXAMPLE_COLLECTION, c => c.insertOne(withId(json)));
       });
     }
   );
@@ -38,10 +44,25 @@ export default (server: restify.Server) => {
       var selector = {};
       if (request.query) {
         if (request.query.intent) {
-          selector = { ...selector, intent: request.query.intent };
+          selector = { ...selector, intentId: request.query.intent };
         }
       }
       quickCmd(response, EXAMPLE_COLLECTION, c => c.find(selector).toArray());
+    }
+  );
+
+  server.del(
+    "/examples",
+    (
+      request: restify.Request,
+      response: restify.Response,
+      next: restify.Next
+    ) => {
+      withQP(request, response, ["example"], exampleId => {
+        quickCmd(response, EXAMPLE_COLLECTION, c =>
+          c.remove({ _id: exampleId })
+        );
+      });
     }
   );
 };

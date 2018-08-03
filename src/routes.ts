@@ -34,7 +34,7 @@ export function withQP(request: restify.Request, response: restify.Response, par
         })
         if (missing.length > 0) {
             response.send(400, missingQP(missing))
-        } else cb(...params)
+        } else cb(...queryParams)
     } else response.send(400, missingQP(params))
 }
 

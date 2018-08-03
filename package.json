@@ -4,7 +4,8 @@
   "description": "NLU trainer api for nlu trainer app",
   "main": "app.js",
   "scripts": {
-    "clean": "rm -rf built/",
+    "clean": "touch built/ && rm -rf built/",
+    "clean-yml": "rm data/*.yml",
     "build": "npm run clean && tsc",
     "start": "npm run build && node built/server.js",
     "test": "mocha"

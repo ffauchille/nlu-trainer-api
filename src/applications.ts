@@ -8,7 +8,7 @@ export default (server: restify.Server) => {
     "/apps",
     (request: restify.Request, response: restify.Response) => {
       withJSON<AppModel>(request, response, json => {
-        let withMeta: AppModel = { ...json, status: "empty" }
+        let withMeta: AppModel = { ...json }
         quickCmd(response, APPS_COLLECTION, c => c.insertOne(withId(withMeta)));
       });
     }
