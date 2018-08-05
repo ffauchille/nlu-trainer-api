@@ -1,5 +1,5 @@
 import * as restify from "restify";
-import { withJSON } from "./routes";
+import { withJSON, withQP } from "./routes";
 import { APPS_COLLECTION, withId, quickCmd } from "./mongo";
 import { AppModel } from "./models";
 
@@ -17,4 +17,8 @@ export default (server: restify.Server) => {
   server.get("/apps", (_: restify.Request, response: restify.Response) => {
     quickCmd(response, APPS_COLLECTION, c => c.find({}).toArray());
   });
+
+  server.del("/apps", (req: restify.Request, response: restify.Response) => {
+    withQP(req, response, [ "app" ], app => quickCmd(response, APPS_COLLECTION, c => c.remove({ _id: app })))
+  })
 };

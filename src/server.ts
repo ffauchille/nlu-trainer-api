@@ -7,9 +7,9 @@ var dotenv = require('dotenv');
 dotenv.config({});
 const server = restify.createServer()
 
-const allowHeaders = (process.env.HTTP_ALLOW_HEADERS || "GET, OPTIONS, POST").split(/,\s*/)
+const allowHeaders = (process.env.HTTP_ALLOW_HEADERS || "GET, OPTIONS, POST, DELETE").split(/,\s*/)
 const allowOrigins = (process.env.HTTP_ALLOW_ORIGINS || "*").split(/,\s*/)
-const exposeHeaders = (process.env.HTTP_EXPOSED_HEADERS || "GET, OPTIONS, POST").split(/,\s*/)
+const exposeHeaders = (process.env.HTTP_EXPOSED_HEADERS || "GET, OPTIONS, POST, DELETE").split(/,\s*/)
 export const rasaURL = process.env.RASA_ENDPOINT;
 
 const cors = corsMiddleware({
