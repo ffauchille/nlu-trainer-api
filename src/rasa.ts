@@ -11,7 +11,7 @@ import {
 import { flatMap, map } from "rxjs/operators";
 import { Observable, from } from "rxjs";
 import { joinPath } from "./utils";
-import { rasaTrainError, keyMissingError } from "./error";
+import { rasaTrainError, keyMissingError, rasaParseError } from "./error";
 import { Collection, APPS_COLLECTION } from "./mongo";
 import { normalize } from "./files";
 import { withJSON } from "./routes";
@@ -145,4 +145,20 @@ export default (server: restify.Server) => {
       })
     }
   );
+
+  server.post("/rasa/models/predict", (request: restify.Request, response: restify.Response, next: restify.Next) => {
+    withJSON<{ project: string, text: string }>(request, response, json => {
+      r({ url: joinPath(rasaURL, "parse"), method: "POST", headers: { "Content-Type": "application/json" }, json: true, body: {
+        project: json.project,
+        q: json.text
+      } }, (err, res, body) => {
+        if (!err) {
+          if (body) {
+            let json = typeof body === 'string' ? JSON.parse(body) : body;
+            response.send(200, json)
+          } else response.send(500, rasaParseError("no body in rasa response", json.text))
+        } else response.send(500, rasaParseError(`cannot get app status: ${err}`))
+      })
+    })
+  })
 };

@@ -7,6 +7,7 @@
     "clean": "touch built/ && rm -rf built/",
     "clean-yml": "rm data/*.yml",
     "build": "npm run clean && tsc",
+    "build:dist": "tsc",
     "start": "npm run build && node built/server.js",
     "test": "mocha"
   },
