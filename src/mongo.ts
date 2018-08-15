@@ -3,7 +3,7 @@ import * as restify from "restify";
 import { map, flatMap, catchError } from "rxjs/operators";
 import { Observable, from, empty, Subscriber, Subscription } from "rxjs";
 import { mongoError } from "./error";
-
+import { join } from "path";
 
 export const INTENT_COLLECTION = "intents";
 export const EXAMPLE_COLLECTION = "examples";
@@ -19,7 +19,7 @@ export function withId(json: any) {
 export class Collection {
 
     private uri: string = process.env.MONGO_URI
-    private dbName: string = process.env.MONGO_DB_NAME || "nlutrainer";
+    private dbName: string = process.env.MONGO_DB_NAME;
     private colName: string
     private client$: mongo.MongoClient = null;
 
@@ -32,6 +32,7 @@ export class Collection {
     }
 
     private withDB() {
+        console.log("uri is ", this.uri)
         return new Observable<mongo.Db>(subscriber => {
             mongo.MongoClient.connect(this.uri, { useNewUrlParser: true }, ((error: mongo.MongoError, result) => {
                 if (error) {

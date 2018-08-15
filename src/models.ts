@@ -14,14 +14,25 @@ export type RASAExample = {
     entities?: any[];
 }
 
+
+type AppModelMeta = {
+    [key: string]: any
+}
+
+type RASAModelMeta = AppModelMeta & {
+    pipeline: string[]
+}
+
+
 export class AppModel {
     _id: string;
     name: string;
-    status: AppStatus;
+    type: 'RASA';
+    meta: AppModelMeta
 
     constructor(props: Partial<AppModel>) {
         this._id = props._id || ""
         this.name = props.name || ""
-        this.status = props.status || "not-trained"
+        this.type = props.type || 'RASA'
     }
 }

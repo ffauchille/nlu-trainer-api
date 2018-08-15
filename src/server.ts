@@ -5,6 +5,7 @@ import { onError } from './error';
 
 var dotenv = require('dotenv');
 dotenv.config({});
+
 const server = restify.createServer()
 
 const allowHeaders = (process.env.HTTP_ALLOW_HEADERS || "GET, OPTIONS, POST, DELETE").split(/,\s*/)

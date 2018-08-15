@@ -28,7 +28,7 @@ export const writeRASAFileObservable = (json: any): Observable<PATH> => {
     data += "\n"
     if (json.pipeline) {
       data += "\n" + (typeof json.pipeline === "string" ? `pipeline: "${json.pipeline}"` : `pipeline:\n${newLines(json.pipeline.map(e => `"${e}"`), "  - name: ")}`)
-    } else data += "\npipeline: \"spacy_sklearn\"";
+    } else data += "\npipeline: \"tensorflow_embedding\"";
     data += "\n"
     
     // data 
