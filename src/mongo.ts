@@ -32,7 +32,6 @@ export class Collection {
     }
 
     private withDB() {
-        console.log("uri is ", this.uri)
         return new Observable<mongo.Db>(subscriber => {
             mongo.MongoClient.connect(this.uri, { useNewUrlParser: true }, ((error: mongo.MongoError, result) => {
                 if (error) {
