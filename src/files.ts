@@ -1,9 +1,9 @@
 import * as fs from "fs";
 import { Observable, Subscriber } from "rxjs";
 import { keyMissingError } from "./error";
-import { Collection, INTENT_COLLECTION, EXAMPLE_COLLECTION } from "./mongo";
+import { Collection, INTENT_COLLECTION, EXAMPLE_COLLECTION, ENTITY_COLLECTION } from "./mongo";
 import { flatMap, map } from "rxjs/operators";
-import { RASATrainingData } from "./models";
+import { RASATrainingData, Entity } from "./models";
 
 type PATH = string;
 
@@ -58,18 +58,24 @@ export const withRASAData = (projectId: string): Observable<RASATrainingData> =>
 
   let intentsCol = new Collection(INTENT_COLLECTION);
   let examplesCol = new Collection(EXAMPLE_COLLECTION);
+  let entitiesCol = new Collection(ENTITY_COLLECTION);
+
   let intents$ = intentsCol.run<any[]>(c => c.find({ appId: projectId }).toArray())
+  let entities$ = entitiesCol.run(c => c.find({ appId: projectId }).toArray()).pipe(map<any[], Entity[]>(docs => docs.map(doc => new Entity(doc))))
   let rasaData = intents$.pipe(
     flatMap(intents => {
       let intentIds = intents.map(i => i._id)
       return examplesCol.run<any[]>(c => c.find({ intentId: { $in: intentIds }}).toArray())
-    })).pipe(map(examples => ({
+    }),
+    flatMap(examples => 
+      entities$.pipe(map( entities => ({
       "rasa_nlu_data": {
         "common_examples": examples.map(ex => ({ text: ex.text, intent: ex.intentName, entities: [] })),
         "regex_features": [],
-        "entity_synonyms": []
+        "entity_synonyms": entities
       }
-      }))
+      })))
+      )
     )
   return rasaData
   

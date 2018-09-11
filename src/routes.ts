@@ -4,6 +4,7 @@ import intentsRoutes from "./intents";
 import appsRoutes from "./applications";
 import { wrongFormatError, missingQP } from "./error";
 import exampleRoutes from "./examples";
+import entitiesRoutes from "./entities";
 
 function jsonBody<T>(request: restify.Request, response: restify.Response, cb: (json: T | T[]) => void, extraCheck?: (json: T | T[]) => boolean) {
     if (request.body) {
@@ -41,6 +42,7 @@ export function withQP(request: restify.Request, response: restify.Response, par
 export default (server) => {
     rasaRoutes(server)
     intentsRoutes(server)
+    entitiesRoutes(server)
     appsRoutes(server)
     exampleRoutes(server)
 }

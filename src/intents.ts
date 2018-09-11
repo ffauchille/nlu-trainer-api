@@ -1,7 +1,7 @@
 import * as restify from "restify";
 import { withJSON, withQP } from "./routes";
 import { INTENT_COLLECTION, withId, quickCmd, MONGO_ID_RGXP } from "./mongo";
-import { keyMissingError } from "./error";
+
 
 export default (server: restify.Server) => {
   server.post(

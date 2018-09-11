@@ -6,10 +6,11 @@
   "scripts": {
     "clean": "touch built && rm -rf built",
     "clean-yml": "rm data/*.yml",
+    "clean-test": "rm -rf test/built/",
     "build": "npm run clean && tsc",
     "build:dist": "tsc",
     "start": "npm run build && node built/server.js",
-    "test": "mocha"
+    "test": "npm run clean-test && tsc -p tsconfig.test.json && mocha --recursive test/built/test/"
   },
   "repository": {
     "type": "git",
@@ -36,10 +37,13 @@
     "rxjs": "^6.2.2"
   },
   "devDependencies": {
+    "@types/chai": "^4.1.4",
     "@types/mongodb": "^3.1.2",
     "@types/request": "^2.47.1",
     "@types/restify": "^7.2.3",
     "@types/restify-cors-middleware": "^1.0.1",
+    "chai": "^4.1.2",
+    "mocha": "^5.2.0",
     "tslint": "^5.11.0",
     "typescript": "^2.9.2"
   }

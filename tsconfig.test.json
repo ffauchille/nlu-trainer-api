@@ -1,0 +1,23 @@
+{
+  "compilerOptions": {
+    "target": "es6",
+    "module": "commonjs",
+    "allowJs": false,
+    "sourceMap": true,
+    "outDir": "test/built",
+    "rootDir": "./",
+    "noImplicitAny": false,
+    "strictNullChecks": false,
+    "moduleResolution": "node",
+    "baseUrl": ".",
+    "skipLibCheck": true
+  },
+  "paths": {
+    "*": [
+      "built/*"
+    ]
+  },
+  "exclude": [
+    "built"
+  ]
+}

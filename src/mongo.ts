@@ -1,10 +1,10 @@
 import * as mongo from "mongodb";
 import * as restify from "restify";
 import { map, flatMap, catchError } from "rxjs/operators";
-import { Observable, from, empty, Subscriber, Subscription } from "rxjs";
+import { Observable, from, empty, Subscription } from "rxjs";
 import { mongoError } from "./error";
-import { join } from "path";
 
+export const ENTITY_COLLECTION = "entities"
 export const INTENT_COLLECTION = "intents";
 export const EXAMPLE_COLLECTION = "examples";
 export const APPS_COLLECTION = "apps";

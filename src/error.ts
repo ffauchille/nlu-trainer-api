@@ -13,7 +13,7 @@ export type APIError = Error & {
     statusCode: number;
 }
 
-export const wrongFormatError = (): APIError => ( { type: "API", statusCode: 400, name: "Bad request",message: "payload has wrong format" })
+export const wrongFormatError = ( msg?:string): APIError => ( { type: "API", statusCode: 400, name: "Bad request",message: msg || "payload has wrong format" })
 export const missingQP = (queryParam: string[]): APIError => ( { type: "API", name: "Bad Request", statusCode: 400, message: "missing query parameter " + queryParam.reduce((all, p) => `${all}, ${p}`, '') })
 export const rasaTrainError = (msg: string): APIError => ( { type: "RASA", statusCode: 500, name: "Training error", message: `error posting training file ${msg}` })
 export const rasaParseError = (msg: string, txt: string = ""): APIError => ( { type: "RASA", statusCode: 500, name: "Paring error", message: `error predicting ${txt}: ${msg}` })
