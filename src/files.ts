@@ -62,21 +62,26 @@ export const withRASAData = (projectId: string): Observable<RASATrainingData> =>
 
   let intents$ = intentsCol.run<any[]>(c => c.find({ appId: projectId }).toArray())
   let entities$ = entitiesCol.run(c => c.find({ appId: projectId }).toArray()).pipe(map<any[], Entity[]>(docs => docs.map(doc => new Entity(doc))))
-  let rasaData = intents$.pipe(
-    flatMap(intents => {
-      let intentIds = intents.map(i => i._id)
-      return examplesCol.run<any[]>(c => c.find({ intentId: { $in: intentIds }}).toArray())
-    }),
-    flatMap(examples => 
-      entities$.pipe(map( entities => ({
-      "rasa_nlu_data": {
-        "common_examples": examples.map(ex => ({ text: ex.text, intent: ex.intentName, entities: [] })),
-        "regex_features": [],
-        "entity_synonyms": entities
-      }
-      })))
+  let rasaData = intents$.pipe( flatMap(intents => {
+      let intentIds = intents.map(i => i._id);
+      return examplesCol.run<any[]>(c =>
+        c.find({ intentId: { $in: intentIds } }).toArray()
+      );
+    }), flatMap(examples =>
+      entities$.pipe(
+        map(entities => ({
+          "rasa_nlu_data": {
+            "common_examples": examples.map(ex => ({
+              "text": ex.text,
+              "intent": ex.intentName,
+              "entities": ex.entities
+            })),
+            "regex_features": [],
+            "entity_synonyms": entities
+          }
+        }))
       )
-    )
+    ) );
   return rasaData
   
 }  
