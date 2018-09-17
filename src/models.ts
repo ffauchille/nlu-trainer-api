@@ -80,3 +80,46 @@ export class Example {
         this.entities  = (props.entities || []).map(e => new EntityInExample(e))
     }
 }
+
+
+export class ModelEvaluation {
+    intent_evaluation: IntentEvaluation;
+  
+    constructor(props: Partial<ModelEvaluation>) {
+      this.intent_evaluation = new IntentEvaluation(
+        props.intent_evaluation || {}
+      );
+    }
+  }
+  
+  class IntentEvaluation {
+    report: string;
+    predictions: Prediction[];
+    precision: number;
+    f1_score: number;
+    accuracy: number;
+  
+    constructor(props: Partial<IntentEvaluation>) {
+      this.report = props.report || "";
+      this.predictions = (props.predictions || []).map(
+        prediction => new Prediction(prediction)
+      );
+      this.precision = props.precision || 0;
+      this.f1_score = props.f1_score || 0;
+      this.accuracy = props.accuracy || 0;
+    }
+  }
+  
+  class Prediction {
+    text: string;
+    intent: string;
+    predicted: string;
+    confidence: number;
+  
+    constructor(props: Partial<Prediction>) {
+      this.text = props.text || "";
+      this.intent = props.intent || "";
+      this.predicted = props.predicted || "";
+      this.confidence = props.confidence || -1;
+    }
+  }

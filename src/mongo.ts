@@ -8,6 +8,7 @@ export const ENTITY_COLLECTION = "entities"
 export const INTENT_COLLECTION = "intents";
 export const EXAMPLE_COLLECTION = "examples";
 export const APPS_COLLECTION = "apps";
+export const TEST_SUITE_COLLECTION = "testsuites";
 
 export const MONGO_ID_RGXP = /[a-z0-9]{24}/;
 

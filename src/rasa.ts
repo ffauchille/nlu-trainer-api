@@ -6,7 +6,7 @@ import * as r from "request";
 import {
   writeRASAFileObservable,
   deleteRASAFileObservable,
-  withRASAData
+  withRASATrainingData
 } from "./files";
 import { flatMap, map } from "rxjs/operators";
 import { Observable, from } from "rxjs";
@@ -16,10 +16,39 @@ import { Collection, APPS_COLLECTION } from "./mongo";
 import { normalize } from "./files";
 import { withJSON } from "./routes";
 import { rasaURL } from "./server";
+import testsuite from "./testsuite";
+import { ModelEvaluation } from "./models";
 
 type RasaTrainingResponse = {
   info: string;
 };
+
+/** */
+export function evaluate(
+  testSuite: any,
+  appName: string
+): Observable<ModelEvaluation> {
+  return new Observable<ModelEvaluation>(subscriber => {
+    r(
+      {
+        url: joinPath(rasaURL, `evaluate?project=${normalize(appName)}`),
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        json: true,
+        body: testSuite
+      },
+      (err, res, body) => {
+        if (!err) {
+          if (body) {
+            let json = typeof body === "string" ? JSON.parse(body) : body;
+            subscriber.next(new ModelEvaluation(json));
+          } else subscriber.error(rasaParseError("no body in rasa response"));
+        } else
+          subscriber.error(rasaParseError(`cannot get app status: ${err}`));
+      }
+    );
+  });
+}
 
 /**
  * We have to create a file because RASA is taking a .yml file as training input
@@ -83,9 +112,12 @@ export default (server: restify.Server) => {
             .run(c => c.findOne({ _id: json.project }))
             .pipe(
               flatMap<any, any>(app =>
-                withRASAData(json.project)
+                withRASATrainingData(json.project)
                   .pipe(
-                    map(rasaTrainingData => ({ project: app.name, data: rasaTrainingData }) )
+                    map(rasaTrainingData => ({
+                      project: app.name,
+                      data: rasaTrainingData
+                    }))
                   )
                   .pipe(
                     flatMap(rasaTrainingData =>
@@ -131,34 +163,63 @@ export default (server: restify.Server) => {
 
   server.get(
     "/rasa/models/status",
-    (
-      request: restify.Request,
-      response: restify.Response,
-    ) => {
-      r({ url: joinPath(rasaURL, "status"), method: "GET", headers: { "Content-Type": "application/json" } }, (err, res, body) => {
-        if (!err) {
-          if (body) {
-            let json = typeof body === 'string' ? JSON.parse(body) : body;
-            response.send(200, json)
-          } else response.send(500, rasaTrainError("empty answer from RASA"))
-        } else response.send(500, rasaTrainError(`cannot get app status: ${err}`))
-      })
+    (request: restify.Request, response: restify.Response) => {
+      r(
+        {
+          url: joinPath(rasaURL, "status"),
+          method: "GET",
+          headers: { "Content-Type": "application/json" }
+        },
+        (err, res, body) => {
+          if (!err) {
+            if (body) {
+              let json = typeof body === "string" ? JSON.parse(body) : body;
+              response.send(200, json);
+            } else response.send(500, rasaTrainError("empty answer from RASA"));
+          } else
+            response.send(500, rasaTrainError(`cannot get app status: ${err}`));
+        }
+      );
     }
   );
 
-  server.post("/rasa/models/predict", (request: restify.Request, response: restify.Response, next: restify.Next) => {
-    withJSON<{ project: string, text: string }>(request, response, json => {
-      r({ url: joinPath(rasaURL, "parse"), method: "POST", headers: { "Content-Type": "application/json" }, json: true, body: {
-        project: json.project,
-        q: json.text
-      } }, (err, res, body) => {
-        if (!err) {
-          if (body) {
-            let json = typeof body === 'string' ? JSON.parse(body) : body;
-            response.send(200, json)
-          } else response.send(500, rasaParseError("no body in rasa response", json.text))
-        } else response.send(500, rasaParseError(`cannot get app status: ${err}`))
-      })
-    })
-  })
+  server.post(
+    "/rasa/models/predict",
+    (
+      request: restify.Request,
+      response: restify.Response,
+      next: restify.Next
+    ) => {
+      withJSON<{ project: string; text: string }>(request, response, json => {
+        r(
+          {
+            url: joinPath(rasaURL, "parse"),
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            json: true,
+            body: {
+              project: json.project,
+              q: json.text
+            }
+          },
+          (err, res, body) => {
+            if (!err) {
+              if (body) {
+                let json = typeof body === "string" ? JSON.parse(body) : body;
+                response.send(200, json);
+              } else
+                response.send(
+                  500,
+                  rasaParseError("no body in rasa response", json.text)
+                );
+            } else
+              response.send(
+                500,
+                rasaParseError(`cannot get app status: ${err}`)
+              );
+          }
+        );
+      });
+    }
+  );
 };

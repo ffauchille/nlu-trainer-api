@@ -15,7 +15,7 @@ import { Example } from "./models";
 import { withEntities } from "./utils";
 import { Observable } from "rxjs";
 
-const appExamples$ = (appId: string): Observable<Example[]> => {
+export const appExamples$ = (appId: string): Observable<Example[]> => {
   let intents = new Collection(INTENT_COLLECTION);
   let examples = new Collection(EXAMPLE_COLLECTION);
   return intents.run(c => c.find({ appId }).toArray()).pipe(
