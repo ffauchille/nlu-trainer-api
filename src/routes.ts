@@ -19,6 +19,10 @@ export function withJSON<T>(request: restify.Request, response: restify.Response
     jsonBody(request, response, cb, json => !(json instanceof Array))
 }
 
+export function withClass<T extends Object>(request: restify.Request, response: restify.Response, construct: (pl: any) => T, cb: (instance: T) => void): void {
+    jsonBody<T>(request, response, pl => cb(construct(pl)))
+}
+
 export function withJSONArray<T>(request: restify.Request, response: restify.Response, cb: (jsons: T[]) => void) {
     jsonBody(request, response, cb, jsons => jsons instanceof Array)
 }

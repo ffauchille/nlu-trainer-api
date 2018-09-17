@@ -5,10 +5,13 @@ import {
   EXAMPLE_COLLECTION,
   withId,
   Collection,
-  INTENT_COLLECTION
+  INTENT_COLLECTION,
+  ENTITY_COLLECTION
 } from "./mongo";
 import { flatMap, map } from "rxjs/operators";
 import { keyMissingError } from "./error";
+import { withEntities } from "./utils";
+import { appEntities$ } from "./entities";
 
 type Entity = {
   start: number;
@@ -33,7 +36,17 @@ export default (server: restify.Server) => {
     "/examples",
     (request: restify.Request, response: restify.Response) => {
       withJSON<any>(request, response, json => {
-        quickCmd(response, EXAMPLE_COLLECTION, c => c.insertOne(withId(json)));
+        let newExample = withId(json);
+        appEntities$(json.intentId).subscribe((entities: any[]) => {
+          let exampleWithEntities = entities.reduce(
+            (example, entitiyDef) =>
+              withEntities(entitiyDef.value, entitiyDef.synonyms, example),
+            newExample
+          );
+          quickCmd(response, EXAMPLE_COLLECTION, c =>
+            c.insertOne(exampleWithEntities)
+          );
+        });
       });
     }
   );

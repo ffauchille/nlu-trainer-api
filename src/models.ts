@@ -37,13 +37,27 @@ export class AppModel {
     }
 }
 
-export class Entity {
+export class EntityDefinition {
+    _id: string;
+    value: string;
+    synonyms: string[];
+    appId: string;
+
+    constructor(props: Partial<EntityDefinition>) {
+        this._id = props._id || ""
+        this.value = props.value || ""
+        this.synonyms = props.synonyms || []
+        this.appId = props.appId || ""
+    }
+}
+
+export class EntityInExample {
     start: number;
     end: number;
     value: string;
     entity: string;
 
-    constructor(props: Partial<Entity>) {
+    constructor(props: Partial<EntityInExample>) {
         this.start = props.start || 0
         this.end = props.end || 0
         this.value = props.value || ""
@@ -56,13 +70,13 @@ export class Example {
     text: string;
     intentName: string;
     intentId: string;
-    entities: Entity[];
+    entities: EntityInExample[];
 
     constructor(props: Partial<Example>) {
         this._id = props._id || ""
         this.text = props.text || ""
         this.intentName = props.intentName || ""
         this.intentId = props.intentId || ""
-        this.entities  = (props.entities || []).map(e => new Entity(e))
+        this.entities  = (props.entities || []).map(e => new EntityInExample(e))
     }
 }

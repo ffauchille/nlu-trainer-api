@@ -3,7 +3,7 @@ import { Observable, Subscriber } from "rxjs";
 import { keyMissingError } from "./error";
 import { Collection, INTENT_COLLECTION, EXAMPLE_COLLECTION, ENTITY_COLLECTION } from "./mongo";
 import { flatMap, map } from "rxjs/operators";
-import { RASATrainingData, Entity } from "./models";
+import { RASATrainingData, EntityInExample, EntityDefinition } from "./models";
 
 type PATH = string;
 
@@ -28,7 +28,19 @@ export const writeRASAFileObservable = (json: any): Observable<PATH> => {
     data += "\n"
     if (json.pipeline) {
       data += "\n" + (typeof json.pipeline === "string" ? `pipeline: "${json.pipeline}"` : `pipeline:\n${newLines(json.pipeline.map(e => `"${e}"`), "  - name: ")}`)
-    } else data += "\npipeline: \"tensorflow_embedding\"";
+    } else { 
+      data += (
+    `\npipeline:
+  - name: "tokenizer_whitespace"
+  - name: "ner_crf"
+  - name: "ner_synonyms"
+  - name: "ner_duckling_http"
+    url: "${process.env.RASA_DUCKLING_ENDPOINT}"
+    locale: "en_GB"
+    timezone: "Europe/Paris"
+  - name: "intent_featurizer_count_vectors"
+  - name: "intent_classifier_tensorflow_embedding"`)
+    }
     data += "\n"
     
     // data 
@@ -61,7 +73,7 @@ export const withRASAData = (projectId: string): Observable<RASATrainingData> =>
   let entitiesCol = new Collection(ENTITY_COLLECTION);
 
   let intents$ = intentsCol.run<any[]>(c => c.find({ appId: projectId }).toArray())
-  let entities$ = entitiesCol.run(c => c.find({ appId: projectId }).toArray()).pipe(map<any[], Entity[]>(docs => docs.map(doc => new Entity(doc))))
+  let entities$ = entitiesCol.run(c => c.find({ appId: projectId }).toArray()).pipe(map<any[], EntityDefinition[]>(docs => docs.map(doc => new EntityDefinition(doc))))
   let rasaData = intents$.pipe( flatMap(intents => {
       let intentIds = intents.map(i => i._id);
       return examplesCol.run<any[]>(c =>
@@ -77,7 +89,7 @@ export const withRASAData = (projectId: string): Observable<RASATrainingData> =>
               "entities": ex.entities
             })),
             "regex_features": [],
-            "entity_synonyms": entities
+            "entity_synonyms": entities.map(entityDef => ({ value: entityDef.value, synonyms: entityDef.synonyms }))
           }
         }))
       )

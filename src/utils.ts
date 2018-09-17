@@ -1,4 +1,4 @@
-import { Example, Entity } from "./models";
+import { Example } from "./models";
 
 export function joinPath(...paths: string[]): string {
     return paths.reduce((path, chunck) => {
@@ -12,6 +12,23 @@ export function urlify(str: string) {
     return str.replace(" ", "%20")
 }
 
+/** first index of the whole word <w> in <str>; it's case sensitive */
+export function wordIndexOf(w: string, txt: string, start?: number): number {
+    let idx = -1;
+    let startIdx = start || 0;
+    let foundIdx = txt.indexOf(w, startIdx)
+    let wordBreaker = /[+,;!?.' ]/
+    if (foundIdx > -1) {
+        let afterWordEndIdx = foundIdx + w.length
+        let firstLetterAfterWord = txt[afterWordEndIdx]
+        // check if next character is a word breaker
+        if (afterWordEndIdx === txt.length || !!wordBreaker.exec(firstLetterAfterWord)) {
+            idx = foundIdx;
+        }
+    }
+    return idx;
+}
+
 function allIndexesOf(txt: string, substr: string): { start: number, end: number }[] {
 
     let idxs = [];
@@ -19,9 +36,10 @@ function allIndexesOf(txt: string, substr: string): { start: number, end: number
         let index;
         let startIndex = 0
         let subStrLen= substr.length
+        let lowerSubStr = substr.toLowerCase();
         let lowerTxt = txt.toLowerCase();
-        
-        while ((index = lowerTxt.indexOf(substr.toLowerCase(), startIndex)) > -1) {
+
+        while ((index = wordIndexOf(lowerSubStr, lowerTxt, startIndex)) > -1) {
                 let end = index + subStrLen;
                 idxs.push({ start: index, end });
                 startIndex = end;
@@ -43,6 +61,6 @@ export function withEntities(entityValue: string, synonyms: string[], example: E
         .reduce((res, arr) => res.concat(arr), [])
     return {
         ...example,
-        entities: example.entities.concat(newEntities)
+        entities: (example.entities || []).concat(newEntities)
     }
 }
