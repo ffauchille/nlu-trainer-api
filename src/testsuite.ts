@@ -16,6 +16,7 @@ import { evaluate } from "./rasa";
 import { AppModel } from "./models";
 import { of } from "rxjs";
 import { appExamples$ } from "./entities";
+import * as fs from "fs";
 
 export default (server: restify.Server) => {
   server.post(
@@ -111,6 +112,18 @@ export default (server: restify.Server) => {
       });
     }
   );
+
+  server.post(
+    "/testsuites/csv",
+    (req: restify.Request, res: restify.Response, next: restify.Next) => {
+      for (var file in req.files) {
+        
+        let read = fs.readFileSync(file, { encoding: 'utf-8'})
+        console.log("file read: ", read)
+        res.send({status: "imported successfully"})
+      }
+    }
+  )
 
   server.del(
     "/testsuites",
