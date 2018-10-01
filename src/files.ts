@@ -16,8 +16,6 @@ import {
 } from "./models";
 import csv from "csv-parser";
 
-
-
 type PATH = string;
 
 const newLines = (lines: string[], prefix?: string) =>
@@ -44,7 +42,16 @@ export const deleteRASAFileObservable = (
   });
 };
 
-
+export function parseCSV$<T>(filePath: string): Observable<T[]> {
+  return Observable.create(sub => {
+    let read: T[] = [];
+    return fs
+      .createReadStream(filePath)
+      .pipe(csv({ separator: ";" }))
+      .on("data", read.push)
+      .on("end", () => sub.next(read));
+  });
+}
 
 export const writeRASAFileObservable = (json: any): Observable<PATH> => {
   return new Observable<PATH>((subscriber: Subscriber<PATH>) => {

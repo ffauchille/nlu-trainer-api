@@ -5,6 +5,7 @@ import appsRoutes from "./applications";
 import { wrongFormatError, missingQP } from "./error";
 import exampleRoutes from "./examples";
 import entitiesRoutes from "./entities";
+import testsuiteRoutes from "./testsuite";
 
 function jsonBody<T>(request: restify.Request, response: restify.Response, cb: (json: T | T[]) => void, extraCheck?: (json: T | T[]) => boolean) {
     if (request.body) {
@@ -49,4 +50,5 @@ export default (server) => {
     entitiesRoutes(server)
     appsRoutes(server)
     exampleRoutes(server)
+    testsuiteRoutes(server)
 }

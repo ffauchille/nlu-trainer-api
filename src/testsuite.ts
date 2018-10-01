@@ -10,13 +10,37 @@ import {
   APPS_COLLECTION
 } from "./mongo";
 import { withJSON, withQP } from "./routes";
-import { withRASATrainingData } from "./files";
+import { withRASATrainingData, parseCSV$ } from "./files";
 import { map, take, flatMap } from "rxjs/operators";
 import { evaluate } from "./rasa";
-import { AppModel } from "./models";
-import { of } from "rxjs";
-import { appExamples$ } from "./entities";
-import * as fs from "fs";
+import { AppModel, TestSuite, RASATrainingData, Example } from "./models";
+import { of, Observable } from "rxjs";
+
+const insertSuite$ = (suite: TestSuite): Observable<any/* testSuite with id*/> => {
+  let testSuite = withId({
+    ...suite,
+    testExamples: (suite.testExamples || []).map(ex => ({
+      text: ex.text,
+      intent: ex.intent,
+      entities: ex.entities || []
+    }))
+  });
+  return new Collection(TEST_SUITE_COLLECTION).run(c =>
+    c.insertOne(testSuite).then(_ => testSuite)
+  ).pipe(map(_ => testSuite))
+}
+
+const suiteById$ = (suiteId: string) => {
+  let selector = { _id: suiteId };
+  let testsuites = new Collection(TEST_SUITE_COLLECTION);
+  return testsuites.run<any>(c => c.findOne(selector))
+}
+
+const updateSuite$ = (suite: any): Observable<any/* suite updated */> => {
+  let selector = { _id: suite._id }
+  let testSuites = new Collection(TEST_SUITE_COLLECTION);
+  return testSuites.run<any>(c => c.updateOne(selector, { $set: { name: suite.name, testExamples: suite.testExamples }}))
+}
 
 export default (server: restify.Server) => {
   server.post(
@@ -26,30 +50,9 @@ export default (server: restify.Server) => {
         let newSuite = withId(json);
         let suite$ = of(newSuite);
         if (newSuite.appId && newSuite.appId.match(MONGO_ID_RGXP)) {
-          if (newSuite.fromTraining) {
-            suite$ = appExamples$(newSuite.appId).pipe(
-              map(examples => ({
-                ...newSuite,
-                testExamples: [...newSuite.testExamples, examples]
-              }))
-            );
-          }
-          delete newSuite.fromTraining;
           suite$
             .pipe(
-              map(suite => {
-                let testSuite = {
-                  ...suite,
-                  testExamples: (suite.examples || []).map(ex => ({
-                    text: ex.text,
-                    intent: ex.intent,
-                    entities: ex.entities || []
-                  }))
-                };
-                return new Collection(TEST_SUITE_COLLECTION).run(c =>
-                  c.insertOne(testSuite).then(_ => testSuite)
-                );
-              }),
+              flatMap(suite => insertSuite$(suite)),
               take(1)
             )
             .subscribe(
@@ -90,8 +93,8 @@ export default (server: restify.Server) => {
           testsuites
             .run<any>(c => c.findOne(selector))
             .pipe(
-              map(testSuite =>
-                withRASATrainingData(testSuite.appId, testSuite.testExamples)
+              flatMap<TestSuite, RASATrainingData>(testSuite =>
+                withRASATrainingData(testSuite.appId, testSuite.testExamples.map(ex => new Example({ text: ex.text, intentName: ex.intent })))
               ),
               flatMap(testees => {
                 let apps = new Collection(APPS_COLLECTION);
@@ -116,12 +119,21 @@ export default (server: restify.Server) => {
   server.post(
     "/testsuites/csv",
     (req: restify.Request, res: restify.Response, next: restify.Next) => {
-      for (var file in req.files) {
-        
-        let read = fs.readFileSync(file, { encoding: 'utf-8'})
-        console.log("file read: ", read)
-        res.send({status: "imported successfully"})
-      }
+      withQP(req, res, ["suiteId"], suiteId => {
+        if (req && req.files && req.files.csvBytes && req.files.csvBytes.path) {
+          suiteById$(suiteId).pipe(
+            flatMap(suite => 
+              parseCSV$(req.files.csvBytes.path).pipe(
+                flatMap(testees => updateSuite$({ ...suite, testExamples: testees })) // TODO update suite
+              )
+            ),
+            take(1)
+          ).subscribe(
+            testSuite => res.send(200, testSuite),
+            err => res.send(400, { error: err })
+          )
+        } else res.send(400, wrongFormatError("no CSV in payload"))
+      })
     }
   )
 
