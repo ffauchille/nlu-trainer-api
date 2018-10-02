@@ -21,7 +21,6 @@ const cors = corsMiddleware({
 
 // Body & query parser plugins
 server.use(restify.plugins.jsonBodyParser())
-server.use(restify.plugins.bodyParser({ mapParams: false, maxFileSize: 100000000 /* 95.4 MiB */ }))
 server.use(restify.plugins.queryParser())
 // CORS
 server.pre(cors.preflight)

@@ -24,7 +24,7 @@ type RasaTrainingResponse = {
 };
 
 /** */
-export function evaluate(
+export function evaluate$(
   testSuite: any,
   appName: string
 ): Observable<ModelEvaluation> {

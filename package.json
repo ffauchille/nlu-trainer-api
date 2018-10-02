@@ -28,10 +28,10 @@
   },
   "homepage": "https://github.com/ffauchille/nlu-trainer-api#readme",
   "dependencies": {
-    "csv-parser": "^2.0.0",
     "dotenv": "^6.0.0",
     "jsonschema": "^1.2.4",
     "mongodb": "^3.1.1",
+    "node-csv": "^0.1.2",
     "request": "^2.87.0",
     "restify": "^7.2.1",
     "restify-cors-middleware": "^1.1.1",

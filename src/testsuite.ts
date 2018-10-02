@@ -12,11 +12,20 @@ import {
 import { withJSON, withQP } from "./routes";
 import { withRASATrainingData, parseCSV$ } from "./files";
 import { map, take, flatMap } from "rxjs/operators";
-import { evaluate } from "./rasa";
-import { AppModel, TestSuite, RASATrainingData, Example } from "./models";
+import { evaluate$ } from "./rasa";
+import {
+  AppModel,
+  TestSuite,
+  RASATrainingData,
+  Example,
+  TestExample,
+  mergeTestExamples
+} from "./models";
 import { of, Observable } from "rxjs";
 
-const insertSuite$ = (suite: TestSuite): Observable<any/* testSuite with id*/> => {
+const insertSuite$ = (
+  suite: TestSuite
+): Observable<any /* testSuite with id*/> => {
   let testSuite = withId({
     ...suite,
     testExamples: (suite.testExamples || []).map(ex => ({
@@ -25,22 +34,35 @@ const insertSuite$ = (suite: TestSuite): Observable<any/* testSuite with id*/> =
       entities: ex.entities || []
     }))
   });
-  return new Collection(TEST_SUITE_COLLECTION).run(c =>
-    c.insertOne(testSuite).then(_ => testSuite)
-  ).pipe(map(_ => testSuite))
-}
+  return new Collection(TEST_SUITE_COLLECTION)
+    .run(c => c.insertOne(testSuite).then(_ => testSuite))
+    .pipe(map(_ => testSuite));
+};
 
 const suiteById$ = (suiteId: string) => {
   let selector = { _id: suiteId };
   let testsuites = new Collection(TEST_SUITE_COLLECTION);
-  return testsuites.run<any>(c => c.findOne(selector))
-}
+  return testsuites.run<any>(c => c.findOne(selector));
+};
 
-const updateSuite$ = (suite: any): Observable<any/* suite updated */> => {
-  let selector = { _id: suite._id }
+/**
+ * Update suite in database; e.g. name and test examples
+ * @param suite the updated test suite
+ * @return an observable containing same suite passed in param
+ */
+const updateSuite$ = (
+  suite: TestSuite
+): Observable<TestSuite /* updated */> => {
+  let selector = { _id: suite._id };
   let testSuites = new Collection(TEST_SUITE_COLLECTION);
-  return testSuites.run<any>(c => c.updateOne(selector, { $set: { name: suite.name, testExamples: suite.testExamples }}))
-}
+  return testSuites
+    .run<any>(c =>
+      c.updateOne(selector, {
+        $set: { name: suite.name, testExamples: suite.testExamples }
+      })
+    )
+    .pipe(map(_ => suite));
+};
 
 export default (server: restify.Server) => {
   server.post(
@@ -94,14 +116,20 @@ export default (server: restify.Server) => {
             .run<any>(c => c.findOne(selector))
             .pipe(
               flatMap<TestSuite, RASATrainingData>(testSuite =>
-                withRASATrainingData(testSuite.appId, testSuite.testExamples.map(ex => new Example({ text: ex.text, intentName: ex.intent })))
+                withRASATrainingData(
+                  testSuite.appId,
+                  testSuite.testExamples.map(
+                    ex => new Example({ text: ex.text, intentName: ex.intent })
+                  )
+                ).pipe(
+                  flatMap(testees => {
+                    let apps = new Collection(APPS_COLLECTION);
+                    return apps
+                      .run<AppModel>(c => c.findOne({ _id: testSuite.appId }))
+                      .pipe(flatMap(app => evaluate$(testees, app.name)));
+                  })
+                )
               ),
-              flatMap(testees => {
-                let apps = new Collection(APPS_COLLECTION);
-                return apps
-                  .run<AppModel>(c => c.findOne({ _id: testSuiteId }))
-                  .pipe(map(app => evaluate(testees, app.name)));
-              }),
               take(1)
             )
             .subscribe(
@@ -117,25 +145,33 @@ export default (server: restify.Server) => {
   );
 
   server.post(
-    "/testsuites/csv",
+    "/testsuites/examples/csv",
+    restify.plugins.multipartBodyParser({
+      mapParams: false,
+      maxFileSize: 100000000 /* 95.4 MiB */
+    }),
     (req: restify.Request, res: restify.Response, next: restify.Next) => {
-      withQP(req, res, ["suiteId"], suiteId => {
-        if (req && req.files && req.files.csvBytes && req.files.csvBytes.path) {
-          suiteById$(suiteId).pipe(
-            flatMap(suite => 
-              parseCSV$(req.files.csvBytes.path).pipe(
-                flatMap(testees => updateSuite$({ ...suite, testExamples: testees })) // TODO update suite
-              )
-            ),
-            take(1)
-          ).subscribe(
-            testSuite => res.send(200, testSuite),
-            err => res.send(400, { error: err })
-          )
-        } else res.send(400, wrongFormatError("no CSV in payload"))
-      })
+      withQP(req, res, ["testSuiteId"], suiteId => {
+        if (req && req.files && req.files.csvBytes && req.files.csvBytes) {
+          suiteById$(suiteId)
+            .pipe(
+              flatMap(suite =>
+                parseCSV$(req.files.csvBytes.path).pipe(
+                  flatMap<TestExample[], TestSuite>(testees =>
+                    updateSuite$({ ...suite, testExamples: mergeTestExamples(suite.testExamples, testees) })
+                  )
+                )
+              ),
+              take(1)
+            )
+            .subscribe(
+              testSuite => res.send(200, testSuite),
+              err => res.send(400, { error: err })
+            );
+        } else res.send(400, wrongFormatError("no CSV in payload"));
+      });
     }
-  )
+  );
 
   server.del(
     "/testsuites",

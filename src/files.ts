@@ -12,9 +12,10 @@ import {
   RASATrainingData,
   EntityInExample,
   EntityDefinition,
-  Example
+  Example,
+  TestExample
 } from "./models";
-import csv from "csv-parser";
+var parse = require("csv-parse");
 
 type PATH = string;
 
@@ -42,14 +43,44 @@ export const deleteRASAFileObservable = (
   });
 };
 
-export function parseCSV$<T>(filePath: string): Observable<T[]> {
-  return Observable.create(sub => {
-    let read: T[] = [];
-    return fs
-      .createReadStream(filePath)
-      .pipe(csv({ separator: ";" }))
-      .on("data", read.push)
-      .on("end", () => sub.next(read));
+export function parseCSV$(filePath: string): Observable<TestExample[]> {
+  return Observable.create(observer => {
+    let read: { text: string; intent: string; entities: string }[] = [];
+    // TODO: read stream instead of loading all in memory ...
+    return fs.readFile(filePath, (err, data) => {
+      if (err) {
+        observer.error(err);
+      } else {
+        parse(data, { trim: true, skip_empty_lines: true, delimiter: ';' })
+          .on("readable", function() {
+            let line;
+            while ((line = this.read())) {
+              // line format: 
+              //  ['my example ', 'my intent', 'my entity1, my entit2...' ]
+              if (line.length != 3) {
+                return observer.error(new Error("bad CSV line format (should be 3 rows: example, intent and entities"))
+              }
+              read.push(line);
+            }
+          })
+          .on("error", function(err) {
+            observer.error(err);
+          })
+          .on("end", function() {
+            let withoutHeader = read.length > 1 ? read.slice(1, read.length) : [];
+            return observer.next(
+              withoutHeader.map(
+                line =>
+                  new TestExample({
+                    text: line[0],
+                    intent: line[1],
+                    entities: line[2].split(",").map(e => e.trim())
+                  })
+              )
+            );
+          });
+      }
+    });
   });
 }
 

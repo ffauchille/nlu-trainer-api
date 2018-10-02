@@ -133,6 +133,20 @@ export class TestExample {
   }
 }
 
+/**
+ * Merge test examples removing duplicates
+ * NOTE: two test examples are considered duplicate if both text and intent match only (it does not look at entities)
+ * @param original base test examples 
+ * @param supplements test examples to be merged with originals
+ * @returns a copy of original test examples with supplements that does not exists in originals;
+ *          supplements are inserted before originals (e.g. [ ...supplements, ...originals ])
+ */
+export const mergeTestExamples = (original: TestExample[], supplements: TestExample[]): TestExample[] => {
+  // not at all efficient, but since we have not many data, it should be fine
+  let nonDuplicates = supplements.filter(e => !original.find(o => o.text === e.text && o.intent === e.intent))
+  return nonDuplicates.concat(original);
+}
+
 export class TestSuite {
   _id: string;
   name: string;
