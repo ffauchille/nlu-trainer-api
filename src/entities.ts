@@ -31,7 +31,7 @@ export const appEntities$ = (intentId: string): Observable<any[]> => {
   let intents = new Collection(INTENT_COLLECTION);
   let entities = new Collection(ENTITY_COLLECTION);
   return intents.run(c => c.findOne({ _id: intentId })).pipe(
-    switchMap<any, any[]>(found => {
+    flatMap<any, any[]>(found => {
       let appId = (found || { appId: "" }).appId;
       return entities.run<any[]>(c => c.find({ appId }).toArray());
     })

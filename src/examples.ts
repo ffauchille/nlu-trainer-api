@@ -8,7 +8,7 @@ import {
   INTENT_COLLECTION,
   ENTITY_COLLECTION
 } from "./mongo";
-import { flatMap, map } from "rxjs/operators";
+import { flatMap, map, take } from "rxjs/operators";
 import { keyMissingError } from "./error";
 import { withEntities } from "./utils";
 import { appEntities$ } from "./entities";
@@ -37,16 +37,26 @@ export default (server: restify.Server) => {
     (request: restify.Request, response: restify.Response) => {
       withJSON<any>(request, response, json => {
         let newExample = withId(json);
-        appEntities$(json.intentId).subscribe((entities: any[]) => {
-          let exampleWithEntities = entities.reduce(
-            (example, entitiyDef) =>
-              withEntities(entitiyDef.value, entitiyDef.synonyms, example),
-            newExample
+        appEntities$(json.intentId)
+          .pipe(
+            map((entities: any[]) => {
+              let exampleWithEntities = entities.reduce(
+                (example, entitiyDef) =>
+                  withEntities(entitiyDef.value, entitiyDef.synonyms, example),
+                newExample
+              );
+              return exampleWithEntities;
+            }),
+            flatMap(ex => {
+              let examplesCol = new Collection(EXAMPLE_COLLECTION);
+              return examplesCol.run(c => c.insertOne(ex)).pipe(map(_ => ex));
+            }),
+            take(1)
+          )
+          .subscribe(
+            exInserted => response.send(201, exInserted),
+            err => response.send(500, { error: err })
           );
-          quickCmd(response, EXAMPLE_COLLECTION, c =>
-            c.insertOne(exampleWithEntities)
-          );
-        });
       });
     }
   );

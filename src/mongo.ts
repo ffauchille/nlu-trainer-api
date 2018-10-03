@@ -1,12 +1,13 @@
 import * as mongo from "mongodb";
 import * as restify from "restify";
-import { map, flatMap, catchError } from "rxjs/operators";
+import { map, flatMap, catchError, take } from "rxjs/operators";
 import { Observable, from, empty, Subscription } from "rxjs";
 import { mongoError } from "./error";
 
 export const ENTITY_COLLECTION = "entities"
 export const INTENT_COLLECTION = "intents";
 export const EXAMPLE_COLLECTION = "examples";
+export const CATEGORY_COLLECTION = "categories";
 export const APPS_COLLECTION = "apps";
 export const TEST_SUITE_COLLECTION = "testsuites";
 
@@ -80,7 +81,7 @@ export class Collection {
 
 export function quickCmd<T>(response: restify.Response, colName: string, queryCb: ( col: mongo.Collection<any> ) => Promise<T>): Subscription {
     let col = new Collection(colName)
-    let sub = col.quickRun(response, queryCb).subscribe()
+    let sub = col.quickRun(response, queryCb).pipe(take(1)).subscribe()
     col.close();
     return sub;
 }

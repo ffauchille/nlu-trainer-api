@@ -8,7 +8,7 @@ import {
   deleteRASAFileObservable,
   withRASATrainingData
 } from "./files";
-import { flatMap, map } from "rxjs/operators";
+import { flatMap, map, take } from "rxjs/operators";
 import { Observable, from } from "rxjs";
 import { joinPath } from "./utils";
 import { rasaTrainError, keyMissingError, rasaParseError } from "./error";
@@ -145,7 +145,8 @@ export default (server: restify.Server) => {
                         )
                     )
                   )
-              )
+              ),
+              take(1)
             )
             .subscribe({
               next: (res: RasaTrainingResponse) => {

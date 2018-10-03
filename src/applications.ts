@@ -1,7 +1,13 @@
 import * as restify from "restify";
 import { withJSON, withQP } from "./routes";
-import { APPS_COLLECTION, withId, quickCmd } from "./mongo";
+import { APPS_COLLECTION, withId, quickCmd, Collection } from "./mongo";
 import { AppModel } from "./models";
+import { Observable } from "rxjs";
+
+export const appByName$= (name: string): Observable<AppModel> => {
+  let apps = new Collection(APPS_COLLECTION);
+  return apps.run(c => c.findOne({ name }));
+}
 
 export default (server: restify.Server) => {
   server.post(
@@ -13,6 +19,12 @@ export default (server: restify.Server) => {
       });
     }
   );
+
+  server.get("/apps/byname", (req: restify.Request, res: restify.Response, next: restify.Next) => {
+    withQP(req, res, [ "appName" ], name => {
+      quickCmd(res, APPS_COLLECTION, c => c.findOne({ name }))
+    })
+  })
 
   server.get("/apps", (_: restify.Request, response: restify.Response) => {
     quickCmd(response, APPS_COLLECTION, c => c.find({}).toArray());
