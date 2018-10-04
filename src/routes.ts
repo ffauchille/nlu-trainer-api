@@ -20,7 +20,6 @@ function jsonBody<T>(
         ? JSON.parse(request.body)
         : request.body;
     if (json && extraCheck) {
-      cb(json);
       extraCheck(json)
         ? cb(json)
         : response.send(400, wrongFormatError("didn't passed extra checks"));

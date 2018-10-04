@@ -12,6 +12,7 @@ import { flatMap, map, take } from "rxjs/operators";
 import { keyMissingError } from "./error";
 import { withEntities } from "./utils";
 import { appEntities$ } from "./entities";
+import { of } from "rxjs";
 
 type Entity = {
   start: number;
@@ -37,16 +38,15 @@ export default (server: restify.Server) => {
     (request: restify.Request, response: restify.Response) => {
       withJSON<any>(request, response, json => {
         let newExample = withId(json);
-        appEntities$(json.intentId)
+        appEntities$(newExample.intentId)
           .pipe(
-            map((entities: any[]) => {
-              let exampleWithEntities = entities.reduce(
+            map((entities: any[]) =>
+              entities.reduce(
                 (example, entitiyDef) =>
                   withEntities(entitiyDef.value, entitiyDef.synonyms, example),
                 newExample
-              );
-              return exampleWithEntities;
-            }),
+              )
+            ),
             flatMap(ex => {
               let examplesCol = new Collection(EXAMPLE_COLLECTION);
               return examplesCol.run(c => c.insertOne(ex)).pipe(map(_ => ex));
@@ -54,8 +54,12 @@ export default (server: restify.Server) => {
             take(1)
           )
           .subscribe(
-            exInserted => response.send(201, exInserted),
-            err => response.send(500, { error: err })
+            exInserted => {
+              response.send(201, exInserted);
+            },
+            err => {
+              response.send(500, { error: err });
+            }
           );
       });
     }
