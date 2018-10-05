@@ -7,6 +7,7 @@ import exampleRoutes from "./examples";
 import intentsRoutes from "./intents";
 import rasaRoutes from "./rasa";
 import testsuiteRoutes from "./testsuite";
+import { Page } from "./paging";
 
 function jsonBody<T>(
   request: restify.Request,
@@ -50,6 +51,21 @@ export function withJSONArray<T>(
   cb: (jsons: T[]) => void
 ) {
   jsonBody(request, response, cb, jsons => jsons instanceof Array);
+}
+
+export function withPage(
+  request: restify.Request,
+  response: restify.Response,
+  cb: (page: Page) => void
+): void {
+  withQP(request, response, [ "offset", "size" ], (offset, size) => {
+    let _offset: number = parseInt(offset)
+    let _size: number = parseInt(size)
+    if (!isNaN(_offset) && !isNaN(_size))
+      return cb(new Page({ offset: _offset, size: _size }))
+    else
+      response.send(400, "needs to set a valid offset and page size")
+  })
 }
 
 export function withQP(

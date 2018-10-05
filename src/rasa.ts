@@ -16,7 +16,6 @@ import { Collection, APPS_COLLECTION } from "./mongo";
 import { normalize } from "./files";
 import { withJSON } from "./routes";
 import { rasaURL } from "./server";
-import testsuite from "./testsuite";
 import { ModelEvaluation } from "./models";
 
 type RasaTrainingResponse = {

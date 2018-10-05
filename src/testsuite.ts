@@ -9,7 +9,7 @@ import {
   Collection,
   APPS_COLLECTION
 } from "./mongo";
-import { withJSON, withQP } from "./routes";
+import { withJSON, withQP, withPage } from "./routes";
 import { withRASATrainingData, parseCSV$ } from "./files";
 import { map, take, flatMap } from "rxjs/operators";
 import { evaluate$ } from "./rasa";
@@ -22,6 +22,7 @@ import {
   mergeTestExamples
 } from "./models";
 import { of, Observable } from "rxjs";
+import { selectPage$ } from "./paging";
 
 const insertSuite$ = (
   suite: TestSuite
@@ -158,7 +159,13 @@ export default (server: restify.Server) => {
               flatMap(suite =>
                 parseCSV$(req.files.csvBytes.path).pipe(
                   flatMap<TestExample[], TestSuite>(testees =>
-                    updateSuite$({ ...suite, testExamples: mergeTestExamples(suite.testExamples, testees) })
+                    updateSuite$({
+                      ...suite,
+                      testExamples: mergeTestExamples(
+                        suite.testExamples,
+                        testees
+                      )
+                    })
                   )
                 )
               ),
