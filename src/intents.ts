@@ -27,7 +27,10 @@ export default (server: restify.Server) => {
     "/intents",
     (request: restify.Request, response: restify.Response) => {
       withJSON(request, response, json => {
-        quickCmd(response, INTENT_COLLECTION, c => c.insertOne(withId(json)));
+        quickCmd(response, INTENT_COLLECTION, c => {
+          const inserted = withId(json);
+          return c.insertOne(inserted).then(_ => inserted);
+        });
       });
     }
   );
